@@ -1,27 +1,51 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Create .env from Secrets
+        run: |
+          cat <<EOF > .env
+          SUPERADMIN=${{ secrets.SUPERADMIN }}
+          PASSWORD=${{ secrets.PASSWORD }}
+
+          TESTRAIL_URL=${{ secrets.TESTRAIL_URL }}
+          TESTRAIL_USERNAME=${{ secrets.TESTRAIL_USERNAME }}
+          TESTRAIL_APIKEY=${{ secrets.TESTRAIL_APIKEY }}
+          TESTRAIL_PROJECT_ID=${{ secrets.TESTRAIL_PROJECT_ID }}
+          TESTRAIL_SUITE_ID=${{ secrets.TESTRAIL_SUITE_ID }}
+          TESTRAIL_RUN_ID=${{ secrets.TESTRAIL_RUN_ID }}
+          EOF
+        shell: bash
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          NODE_ENV: test
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
